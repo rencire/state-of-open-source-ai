@@ -4,7 +4,7 @@
     devenv.url = "github:cachix/devenv";
   };
 
-  outputs = inputs@{ flake-parts, ... }:
+  outputs = inputs@{ nixpkgs, flake-parts, ... }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       imports = [
         inputs.devenv.flakeModule
