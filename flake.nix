@@ -1,33 +1,32 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.05";
     devenv.url = "github:cachix/devenv";
   };
 
-  nixConfig = {
-    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
-    extra-substituters = "https://devenv.cachix.org";
-  };
+  outputs = inputs@{ flake-parts, ... }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      imports = [
+        inputs.devenv.flakeModule
+      ];
+      systems = nixpkgs.lib.systems.flakeExposed;
 
-  outputs = { self, nixpkgs, devenv, ... } @ inputs:
-    let
-      pkgs = nixpkgs.legacyPackages."x86_64-linux";
-    in
-    {
-      devShell.x86_64-linux = devenv.lib.mkShell {
-        inherit inputs pkgs;
-        modules = [
-          ({ pkgs, config, ... }: {
-            # This is your devenv configuration
-            packages = [ pkgs.hello ];
+      perSystem = { config, self', inputs', pkgs, system, ... }: {
+        # Per-system attributes can be defined here. The self' and inputs'
+        # module parameters provide easy access to attributes of the same
+        # system.
 
-            enterShell = ''
-              hello
-            '';
+        # Equivalent to  inputs'.nixpkgs.legacyPackages.hello;
+        packages.default = pkgs.hello;
 
-            processes.run.exec = "hello";
-          })
-        ];
+        devenv.shells.default = {
+          # https://devenv.sh/reference/options/
+          packages = [ config.packages.default ];
+
+          enterShell = ''
+            hello
+          '';
+        };
       };
     };
 }
