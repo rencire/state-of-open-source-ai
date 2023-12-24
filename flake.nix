@@ -1,17 +1,33 @@
 {
-  description = "A basic flake for python development";
   inputs = {
-    nixpkgs.url = "nixpkgs/nixpkgs-unstable";
-    flakelight.url = "github:accelbread/flakelight";
-    
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    devenv.url = "github:cachix/devenv";
   };
-  outputs = { flakelight, ... }@inputs:
-    flakelight ./. ({ lib,  ... }: {
-      systems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-      devShell.packages = pkgs: with pkgs; ([
-        # Add packages here
-        python3
-        nodejs_20
-      ]);
-    });
+
+  nixConfig = {
+    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
+    extra-substituters = "https://devenv.cachix.org";
+  };
+
+  outputs = { self, nixpkgs, devenv, ... } @ inputs:
+    let
+      pkgs = nixpkgs.legacyPackages."x86_64-linux";
+    in
+    {
+      devShell.x86_64-linux = devenv.lib.mkShell {
+        inherit inputs pkgs;
+        modules = [
+          ({ pkgs, config, ... }: {
+            # This is your devenv configuration
+            packages = [ pkgs.hello ];
+
+            enterShell = ''
+              hello
+            '';
+
+            processes.run.exec = "hello";
+          })
+        ];
+      };
+    };
 }
